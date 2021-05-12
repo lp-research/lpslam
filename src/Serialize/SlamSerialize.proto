@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package LpgfSlamSerialize;
+
+message Position {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+
+  double x_sigma = 4;
+  double y_sigma = 5;
+  double z_sigma = 6;
+}
+
+message Acceleration {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+
+  double x_sigma = 4;
+  double y_sigma = 5;
+  double z_sigma = 6;
+}
+
+message Velocity {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+
+  double x_sigma = 4;
+  double y_sigma = 5;
+  double z_sigma = 6;
+}
+
+message AngularVelocity {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+
+  double x_sigma = 4;
+  double y_sigma = 5;
+  double z_sigma = 6;
+}
+
+message Orientation {
+  double w = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+
+  double sigma = 5;
+}
+
+message GlobalState {
+  Position position = 1;
+  Orientation orientation = 2;
+  Velocity velocity = 3;
+  bool velocityValid = 4;
+}
+
+message GlobalStateInTime {
+    int64 timeStamp = 1;
+    GlobalState globalState = 2;
+}
+
+message TrackerCoordinateSystem {
+  Position position = 1;
+  Orientation orientation = 2;
+}
+
+message CameraImage {
+  int64 timeStamp = 1;
+
+  int64 dataNumber = 2;
+  bytes imageData = 3;
+
+  // global state at the time the camera image was taken
+  GlobalState state_odom = 4;
+  GlobalState state_map = 5;
+  int32 cameraNumber = 6;
+
+  bytes imageData_second = 7;
+  int32 cameraNumber_second = 8;
+
+  TrackerCoordinateSystem imageBase = 9;
+  TrackerCoordinateSystem imageBase_second = 10;
+
+  // if true, the global state has been set to valid values
+  bool hasGlobalState_odom = 11;
+  bool hasGlobalState_map = 12;
+}
+
+message SensorImu {
+    // little typo, fix at some point
+    int64 timesTamp = 1;
+
+    Acceleration acc = 2;
+    AngularVelocity gyro = 3;
+}
+
+message SensorGlobalState {
+    // little typo, fix at some point
+    int64 timesTamp = 1;
+
+    GlobalState globalState = 2;
+    bool reference = 3;
+}
+
+// One feature list is written out as individual features
+// and assembled into a feature list again by the ReplayModule
+message SensorFeature {
+    int64 timeStamp = 1;
+    int64 lastObserved = 2;
+
+    Position position = 3;
+    Position closestKeyframePosition = 4;
+    int64 observationCount = 5;
+    string anchorId = 6;
+}
