@@ -52,7 +52,7 @@ set(optional_conan_env)
 
 if (LPSLAM_BUILD_OPENVSLAM)
   list(APPEND optional_conan_packages
-    g2o/20201223
+    g2o/691dc51ac7c7
     dbow2/1.0.0)
   list(APPEND optional_conan_options
     g2o:shared=False)

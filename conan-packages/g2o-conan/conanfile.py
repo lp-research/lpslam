@@ -3,7 +3,7 @@ import os
 
 class G2oConan(ConanFile):
     name = "g2o"
-    version = "20201223"
+    version = "691dc51ac7c7"
     license = "LGPL3"
     author = "<Put your name here> <And your email here>"
     url = "<Package recipe repository url here, for issues about the package>"
@@ -22,7 +22,9 @@ class G2oConan(ConanFile):
 
     def source(self):
         self.run("git clone --branch {} https://github.com/RainerKuemmerle/g2o.git {}".format(self.release_tag, self._source_subfolder))
-        self.run("cd " + self._source_subfolder + " && git checkout 20201223_git")
+        # don't use a newer version yet, because newer relesae don't come with their own
+        # csparse
+        self.run("cd " + self._source_subfolder + " && git checkout 691dc51ac7c7")
         self._patch()
 
     def _patch(self):
