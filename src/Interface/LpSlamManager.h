@@ -102,6 +102,10 @@ public:
 
     LpMapInfo mappingGetMapRaw(int8_t * map, std::size_t mapSize);
 
+    // boundary not supported at this time
+    std::size_t mappingGetFeatures(LpSlamMapBoundary boundary,
+      LpSlamFeatureEntry * entry, std::size_t entry_count, LpSlamMatrix9x9 transform);
+
     std::size_t mappingGetFeaturesCount(LpSlamMapBoundary boundary);
 
     bool mappingSetMode(bool enableMapping);

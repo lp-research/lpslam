@@ -217,6 +217,11 @@ LpMapInfo LpSlamManager::mappingGetMapRaw(int8_t * map, std::size_t mapSize) {
   return m_impl->mappingGetMapRaw(map, mapSize);
 }
 
+std::size_t LpSlamManager::mappingGetFeatures(LpSlamMapBoundary boundary,
+      LpSlamFeatureEntry * entry, std::size_t entry_count, LpSlamMatrix9x9 transform ) {
+  return m_impl->mappingGetFeatures(boundary, entry, entry_count, transform);
+}
+
 std::size_t LpSlamManager::mappingGetFeaturesCount(LpSlamMapBoundary boundary) {
   return m_impl->mappingGetFeaturesCount(boundary);
 }
