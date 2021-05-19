@@ -1,0 +1,235 @@
+cmake_minimum_required(VERSION 3.10)
+project(LpSlam
+    VERSION 1.0.0)
+
+option(LPSLAM_BUILD_TESTS "Build with unit tests" OFF)
+option(LPSLAM_BUILD_ZEDCAM "Build with direct support for ZED Stereo Cameras" OFF)
+option(LPSLAM_BUILD_ZEDSDK "Build with direct support for ZED SDK" OFF)
+option(LPSLAM_BUILD_OPENVSLAM "Build with OpenVSLAM support" OFF)
+option(LPSLAM_BUILD_OPENVSLAM_PANGOLIN "Build with Pangolin viewer for OpenVSLAM" OFF)
+option(LPSLAM_BUILD_OPENVSLAM_OPENCL "Build with OpenVSLAM OpenCL support" OFF)
+option(LPSLAM_BUILD_WEBOTS "Build with Webots support" OFF)
+option(LPSLAM_BUILD_PROFILE "Build with Profiler support" OFF)
+option(LPSLAM_UNITY "Build using CMake Unity" ON)
+# enable this option if you get the following errors
+# [build] /usr/bin/ld: /home/thomas/.conan/data/opencv/4.3.0/conan/stable/package/51042a3c6d82592cf6b950c6cb32021df91b0612/lib/libopencv_imgcodecs.so: undefined reference to `__exp2_finite'
+# [build] /usr/bin/ld: /home/thomas/.conan/data/opencv/4.3.0/conan/stable/package/51042a3c6d82592cf6b950c6cb32021df91b0612/lib/libopencv_imgcodecs.so: undefined reference to `__exp_finite'
+option(LPSLAM_BUILD_BUGGY_CONAN_PACKAGES "build conan packages which" OFF)
+
+if (LPSLAM_UNITY)
+  set(CMAKE_UNITY_BUILD, ON)
+endif()
+
+# use "armv7-rpi2" for rapsi
+# use "clang" for clang build
+option(LPSLAM_BUILD_CONAN_PROFILE "Build all Conan packages with this profile" "default")
+# use armv7 for rapsi
+option(LPSLAM_BUILD_CONAN_ARCH "Build all Conan packages for this architecture" "x86_64")
+option(LPSLAM_BUILD_CONAN_BUILD_POLICY "When are conan packages build" "missing")
+
+# use this command line to run the profiler
+# CPUPROFILE_FREQUENCY=10000 CPUPROFILE=prof.out bin/lpgf-slam-standalone
+option(BUILD_PROFILE "Link with with Google Perf Tool" OFF)
+
+# require at least GCC8.0 for some C++17 features
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+        message(FATAL_ERROR "GCC version must be at least 8.0!")
+    endif()
+endif()
+
+# use cmake conan plugin
+include(cmake/conan.cmake)
+
+set(optional_conan_packages)
+set(optional_conan_options)
+set(optional_conan_env)
+
+if (LPSLAM_BUILD_OPENVSLAM)
+  list(APPEND optional_conan_packages
+    g2o/1.0.0
+    dbow2/1.0.0)
+  list(APPEND optional_conan_options
+    g2o:shared=False)
+endif()
+
+if (LPSLAM_BUILD_OPENVSLAM_PANGOLIN)
+  list(APPEND optional_conan_packages pangolin/0.5.0)
+  # needs: apt install -y libgtk-3-dev
+  if (NOT WIN32)
+    list(APPEND optional_conan_options
+      gtk:version=3
+      opencv:with_gtk=True)
+  endif()
+else()
+  if (NOT WIN32)
+    list(APPEND optional_conan_options
+      opencv:with_gtk=False)
+  endif()
+endif()
+
+# clang compiler is not picked up properly by some
+# packages within conan
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  list(APPEND optional_conan_env
+          CC=clang
+          CXX=clang++)
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "armv")
+  list(APPEND optional_conan_options
+      opencv:neon=True
+      opencv:vfpv3=True
+      dbow2:neon=True
+      g2o:neon=True)
+
+  # use locally installed OpenCV which has neon enabled
+  list(APPEND optional_conan_packages
+      opencv/4.5.2)
+else()
+  list(APPEND optional_conan_packages
+      # all other platforms use conan from the central server
+      opencv/4.5.2)
+endif()
+
+if (LPSLAM_BUILD_ZEDCAM)
+  list(APPEND optional_conan_packages
+      libusb/1.0.24)
+endif()
+
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+  list(APPEND optional_conan_options
+    # enable video for Linux interface
+    opencv:with_v4l=True)
+endif()
+
+message(STATUS "Installing optional conan packages ${optional_conan_packages}")
+
+set(CONAN_PROFILE "default")
+set(CONAN_ARCH "x86_64")
+
+set(conan_always_build)
+
+# option to always build these libraries because it can come to problems
+# when these libraries are binary build for an older glibc
+if (LPSLAM_BUILD_BUGGY_CONAN_PACKAGES)
+  set(conan_always_build openjpeg libjpeg libpng opencv)
+endif()
+
+conan_cmake_run(REQUIRES
+    boost/1.72.0
+    eigen/3.3.9
+    nlohmann_json/3.7.3
+    spdlog/1.8.0
+    gtest/1.10.0
+    tbb/2020.1
+    protobuf/3.9.1
+    yaml-cpp/0.6.3
+    ${optional_conan_packages}
+    BASIC_SETUP
+    CMAKE_TARGETS
+    OPTIONS
+    TBB:shared=True
+    opencv:shared=True
+    # this will automatically disable some other options
+    opencv:with_tiff=False
+    opencv:with_webp=False
+    opencv:with_openexr=False
+    opencv:with_quirc=False
+    opencv:dnn=False
+    opencv:contrib=True
+    dbow2:shared=False
+    pangolin:shared=False
+    ${optional_conan_options}
+    BUILD ${conan_always_build} missing
+    BUILD_TYPE "Release"
+    IMPORTS
+    "bin, *.dll -> ./bin" # Copies all dll files from packages bin folder to my "bin" folder
+    "lib, *.so* -> ./lib" # Copies all so files from packages bin folder to my "lib" folder
+    "., license* -> ./licenses @ folder=True, ignore_case=True"
+    PROFILE ${LPSLAM_BUILD_CONAN_PROFILE}
+    ARCH ${LPSLAM_BUILD_CONAN_ARCH}
+    ENV
+    ${optional_conan_env}
+    GENERATORS
+    cmake
+    cmake_find_package)
+
+if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
+    # -s for no symbols ?!
+    # setup the linker to set an RPATH which also looks for libraries in the
+    # folder of the binary -> easier deployment on Linux
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra -pedantic -Wl,-rpath=$ORIGIN")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -pedantic -Wl,-rpath=$ORIGIN")
+
+    if ((CMAKE_BUILD_TYPE STREQUAL "Release") AND (NOT BUILD_PROFILE))
+        ## strip all symbols for releases
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+    endif()
+endif()
+
+if (LPSLAM_BUILD_ZEDCAM)
+  set(BUILD_VIDEO ON CACHE BOOL "build")
+  set(BUILD_SENSORS OFF CACHE BOOL "dont build")
+  set(BUILD_EXAMPLES OFF CACHE BOOL "dont build")
+  add_subdirectory(external/zed-open-capture)
+endif()
+
+if (LPSLAM_BUILD_OPENVSLAM)
+  ## will be conan later ..
+  SET(OPENVSLAM_BUILD_TESTS OFF CACHE BOOL "Not tests")
+  SET(BUILD_WITH_MARCH_NATIVE OFF CACHE BOOL "some string")
+  SET(USE_PANGOLIN_VIEWER ${LPSLAM_BUILD_OPENVSLAM_PANGOLIN} CACHE BOOL "some string")
+  SET(USE_SOCKET_PUBLISHER OFF CACHE BOOL "some string")
+  SET(USE_STACK_TRACE_LOGGER OFF CACHE BOOL "some string")
+  if (WIN32 OR CMAKE_SYSTEM_PROCESSOR MATCHES "armv" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    SET(USE_SSE_ORB OFF CACHE BOOL "disabled because it crashes on windows")
+  else()
+    SET(USE_SSE_ORB ON CACHE BOOL "use on other platforms")
+  endif()
+
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "armv" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    # gimme speed plz
+    SET(USE_NEON_ORB OFF CACHE BOOL "use on other platforms")
+  endif()
+
+  if (LPSLAM_BUILD_OPENVSLAM_CUDA)
+    SET(OPENVSLAM_USE_CUDA ON CACHE BOOL "enable cuda support")
+  endif()
+
+  if (LPSLAM_BUILD_OPENVSLAM_OPENCL)
+    SET(OPENVSLAM_USE_OPENCL ON CACHE BOOL "enable OpenCL support")
+  endif()
+
+  add_subdirectory(external/openvslam)
+  #add_library(openvslam_target INTERFACE)
+  #target_include_directories(openvslam_target INTERFACE
+  #    external/openvslam/include)
+  #target_link_directories(openvslam_target INTERFACE
+  #    external/openvslam/lib)
+
+  #add_library(pangolin_viewer_target INTERFACE)
+  #target_include_directories(pangolin_viewer_target INTERFACE
+  #    external/pangolin_viewer/include)
+  #target_link_directories(pangolin_viewer_target INTERFACE
+  #    external/pangolin_viewer/lib)
+
+endif()
+
+if (LPSLAM_BUILD_WEBOTS)
+    FILE(GLOB WEBOTS_CPP_WRAPPER_SRC external/webots/src/*.cpp)
+    add_library(webots_controller STATIC
+        ${WEBOTS_CPP_WRAPPER_SRC}
+    )
+    target_link_directories(webots_controller PUBLIC external/webots/lib/controller)
+    target_link_libraries(webots_controller PUBLIC Controller)
+    #target_link_libraries(webots_controller INTERFACE CppController)
+    target_include_directories(webots_controller PUBLIC
+        external/webots/include/cpp
+        external/webots/include/c
+    )
+endif()
+
+# our code
+add_subdirectory(src/)
