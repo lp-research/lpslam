@@ -52,14 +52,14 @@ set(optional_conan_env)
 
 if (LPSLAM_BUILD_OPENVSLAM)
   list(APPEND optional_conan_packages
-    g2o/1.0.0
+    g2o/20201223
     dbow2/1.0.0)
   list(APPEND optional_conan_options
     g2o:shared=False)
 endif()
 
 if (LPSLAM_BUILD_OPENVSLAM_PANGOLIN)
-  list(APPEND optional_conan_packages pangolin/0.5.0)
+  list(APPEND optional_conan_packages pangolin/0.6.0)
   # needs: apt install -y libgtk-3-dev
   if (NOT WIN32)
     list(APPEND optional_conan_options
