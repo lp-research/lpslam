@@ -258,7 +258,7 @@ bool OpenVSLAMTrackerBase::startOpenVSlam(bool stereo) {
         if (m_useLiveView) {
             if (!m_viewer) {
                 // pangolin can not be restarted if the user does not close the window
-                m_viewer = new pangolin_viewer::viewer(cfg, m_slam.get(),
+                m_viewer = new pangolin_viewer::viewer(cfg->yaml_node_, m_slam.get(),
                     m_slam->get_frame_publisher(), m_slam->get_map_publisher());
                 m_pangolinWorker.start(PangolinThreadParams { m_viewer });
                 spdlog::info("Pangolin viewer started");
