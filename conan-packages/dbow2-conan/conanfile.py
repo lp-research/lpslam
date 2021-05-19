@@ -18,7 +18,6 @@ class Dbow2Conan(ConanFile):
     _source_subfolder = "source_subfolder"
 
     def requirements(self):
-        self.requires("opencv/4.5.2")
         self.requires("eigen/3.3.9")
         ## otherwise there will be trouble linking all the sub-libraries of OpenCV
         # only need to enable this when you want to test-compile the package
@@ -56,16 +55,6 @@ class Dbow2Conan(ConanFile):
         cmake.build()
 
     def _patch(self):
-        ## patch cmake file to discover Eigen library used internally by OpenCV
-        ## because the conan package is named opencv (lower case), the find_package
-        ## would also create variables with opencv_FOUND etc. which does not work
-        ## with the the rest of the CMakeFile, "NAMES OpenCV" makes sure the
-        ## cmake variables have the proper capital letters
-        tools.replace_in_file(os.path.join(self.source_folder, self._source_subfolder, "CMakeLists.txt"),
-            'find_package(OpenCV 4.0 QUIET)',
-            '''find_package(OpenCV 4.5 REQUIRED)
-            ''')
-        
         ## ensure we use position independant code so we can statically link into shared library
         tools.replace_in_file(os.path.join(self.source_folder, self._source_subfolder, "CMakeLists.txt"),
             '-Wall -Wextra -pedantic',
