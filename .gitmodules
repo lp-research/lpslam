@@ -1,0 +1,3 @@
+[submodule "external/openvslam"]
+	path = external/openvslam
+	url = git@github.com:lp-research/openvslam.git
