@@ -71,6 +71,7 @@ RecordEngine::RecordEngine() :
                 } else {
                     velocity = new LpgfSlamSerialize::Velocity();
                 }
+                outState->set_allocated_velocity(velocity);
 
                 return outState;
             };
