@@ -130,6 +130,3 @@ class G2oConan(ConanFile):
             self.cpp_info.components[lib_name].libs = ["g2o_" + lib_name]
             self.cpp_info.components[lib_name].requires = ["eigen::eigen"]
 
-        # csparse extension has a special lib to satisfy LPGL rules
-        self.cpp_info.components["csparse_extension"].libs.append("g2o_ext_csparse")
-
