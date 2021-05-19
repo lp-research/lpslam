@@ -53,7 +53,10 @@ endif()
 set(lpslam_libs
         OpenMP::OpenMP_CXX
         CONAN_PKG::tbb
-        CONAN_PKG::opencv
+        opencv_core
+        opencv_highgui
+        opencv_features2d
+        opencv_calib3d
         CONAN_PKG::boost
         CONAN_PKG::nlohmann_json
         CONAN_PKG::spdlog

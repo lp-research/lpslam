@@ -50,6 +50,13 @@ set(optional_conan_packages)
 set(optional_conan_options)
 set(optional_conan_env)
 
+find_package(OpenCV 4.2 REQUIRED
+  COMPONENTS
+  core imgcodecs videoio features2d calib3d highgui)
+if(NOT OpenCV_FOUND)
+  message(FATAL_ERROR "OpenCV >= 4.2 not found")
+endif()
+
 if (LPSLAM_BUILD_OPENVSLAM)
   list(APPEND optional_conan_packages
     g2o/691dc51ac7c7
@@ -61,16 +68,6 @@ endif()
 if (LPSLAM_BUILD_OPENVSLAM_PANGOLIN)
   list(APPEND optional_conan_packages pangolin/0.6.0)
   # needs: apt install -y libgtk-3-dev
-  if (NOT WIN32)
-    list(APPEND optional_conan_options
-      gtk:version=3
-      opencv:with_gtk=True)
-  endif()
-else()
-  if (NOT WIN32)
-    list(APPEND optional_conan_options
-      opencv:with_gtk=False)
-  endif()
 endif()
 
 # clang compiler is not picked up properly by some
@@ -81,31 +78,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
           CXX=clang++)
 endif()
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "armv")
-  list(APPEND optional_conan_options
-      opencv:neon=True
-      opencv:vfpv3=True
-      dbow2:neon=True
-      g2o:neon=True)
-
-  # use locally installed OpenCV which has neon enabled
-  list(APPEND optional_conan_packages
-      opencv/4.5.2)
-else()
-  list(APPEND optional_conan_packages
-      # all other platforms use conan from the central server
-      opencv/4.5.2)
-endif()
-
 if (LPSLAM_BUILD_ZEDCAM)
   list(APPEND optional_conan_packages
       libusb/1.0.24)
-endif()
-
-if(UNIX AND NOT APPLE AND NOT ANDROID)
-  list(APPEND optional_conan_options
-    # enable video for Linux interface
-    opencv:with_v4l=True)
 endif()
 
 message(STATUS "Installing optional conan packages ${optional_conan_packages}")
@@ -118,7 +93,7 @@ set(conan_always_build)
 # option to always build these libraries because it can come to problems
 # when these libraries are binary build for an older glibc
 if (LPSLAM_BUILD_BUGGY_CONAN_PACKAGES)
-  set(conan_always_build openjpeg libjpeg libpng opencv)
+  set(conan_always_build openjpeg libjpeg libpng)
 endif()
 
 conan_cmake_run(REQUIRES
@@ -129,20 +104,11 @@ conan_cmake_run(REQUIRES
     gtest/1.10.0
     tbb/2020.1
     protobuf/3.9.1
-    yaml-cpp/0.6.3
     ${optional_conan_packages}
     BASIC_SETUP
     CMAKE_TARGETS
     OPTIONS
-    TBB:shared=True
-    opencv:shared=True
-    # this will automatically disable some other options
-    opencv:with_tiff=False
-    opencv:with_webp=False
-    opencv:with_openexr=False
-    opencv:with_quirc=False
-    opencv:dnn=False
-    opencv:contrib=True
+    TBB:shared=False
     dbow2:shared=False
     pangolin:shared=False
     ${optional_conan_options}

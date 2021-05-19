@@ -229,12 +229,14 @@ public:
                 // extract xi and distortion from this one array
                 cv::Mat xi = distCoeffs_toUse.rowRange(cv::Range(0, 1));
                 cv::Mat D = distCoeffs_toUse.rowRange(cv::Range(1, 5));
-
+                /*
+                only supported in contrib-version of OpenCV
                 cv::omnidir::initUndistortRectifyMap(camMatrix_toUse,
                     D, xi, R_toUse,
                     Knew, imageSize, CV_32FC1,
                     m_remap1, m_remap2,
                     cv::omnidir::RECTIFY_PERSPECTIVE);
+                */
             }
 
             m_initialized = true;
