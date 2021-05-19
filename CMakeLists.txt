@@ -188,38 +188,9 @@ if (LPSLAM_BUILD_OPENVSLAM)
   SET(USE_PANGOLIN_VIEWER ${LPSLAM_BUILD_OPENVSLAM_PANGOLIN} CACHE BOOL "some string")
   SET(USE_SOCKET_PUBLISHER OFF CACHE BOOL "some string")
   SET(USE_STACK_TRACE_LOGGER OFF CACHE BOOL "some string")
-  if (WIN32 OR CMAKE_SYSTEM_PROCESSOR MATCHES "armv" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-    SET(USE_SSE_ORB OFF CACHE BOOL "disabled because it crashes on windows")
-  else()
-    SET(USE_SSE_ORB ON CACHE BOOL "use on other platforms")
-  endif()
-
-  if (CMAKE_SYSTEM_PROCESSOR MATCHES "armv" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-    # gimme speed plz
-    SET(USE_NEON_ORB OFF CACHE BOOL "use on other platforms")
-  endif()
-
-  if (LPSLAM_BUILD_OPENVSLAM_CUDA)
-    SET(OPENVSLAM_USE_CUDA ON CACHE BOOL "enable cuda support")
-  endif()
-
-  if (LPSLAM_BUILD_OPENVSLAM_OPENCL)
-    SET(OPENVSLAM_USE_OPENCL ON CACHE BOOL "enable OpenCL support")
-  endif()
+  set(BOW_FRAMEWORK "DBoW2" CACHE STRING "DBoW2 or FBoW")
 
   add_subdirectory(external/openvslam)
-  #add_library(openvslam_target INTERFACE)
-  #target_include_directories(openvslam_target INTERFACE
-  #    external/openvslam/include)
-  #target_link_directories(openvslam_target INTERFACE
-  #    external/openvslam/lib)
-
-  #add_library(pangolin_viewer_target INTERFACE)
-  #target_include_directories(pangolin_viewer_target INTERFACE
-  #    external/pangolin_viewer/include)
-  #target_link_directories(pangolin_viewer_target INTERFACE
-  #    external/pangolin_viewer/lib)
-
 endif()
 
 if (LPSLAM_BUILD_WEBOTS)
