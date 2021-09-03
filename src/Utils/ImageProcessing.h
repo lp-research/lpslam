@@ -221,10 +221,10 @@ public:
                 }
 
                 // compute new camera matrix to project to preserve more space
-                cv::Matx33f Knew = cv::Matx33f(
-                    imageSize.width / 1.7, 0, imageSize.width / 2,
-                    0, imageSize.height / 1.7, imageSize.height / 2,
-                    0, 0, 1);
+                // cv::Matx33f Knew = cv::Matx33f(
+                //    imageSize.width / 1.7, 0, imageSize.width / 2,
+                //    0, imageSize.height / 1.7, imageSize.height / 2,
+                //    0, 0, 1);
 
                 // extract xi and distortion from this one array
                 cv::Mat xi = distCoeffs_toUse.rowRange(cv::Range(0, 1));
