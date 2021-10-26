@@ -260,28 +260,24 @@ TrackerBase::ProcessImageResult OpenVSLAMStereoTracker::processImage(CameraQueue
         }
     }
 
-    if (!laser_data_to_use.is_valid()) {
+    if (laser_data_to_use.is_valid()) {
         // lookup transformation for laser data to camera!
         if (m_requestNavTransformationCallback != nullptr && cam.ros_timestamp.has_value()) {
-            const auto lp_laser_to_odom = m_requestNavTransformationCallback(laser_timestamp_to_use,
-                LpSlamNavDataFrame_Laser, LpSlamNavDataFrame_Odometry,
-                m_requestNavTransformationCallbackUserData);
-            const auto lp_camera_to_odom = m_requestNavTransformationCallback(cam.ros_timestamp.value(),
-                LpSlamNavDataFrame_Camera, LpSlamNavDataFrame_Odometry,
+            const auto lp_laser_to_camera = m_requestNavTransformationCallback(cam.ros_timestamp.value(),
+                LpSlamNavDataFrame_Laser, LpSlamNavDataFrame_Camera,
                 m_requestNavTransformationCallbackUserData);
 
-            // compute relative movement between camera and laser at that time !
-            if (lp_laser_to_odom.valid && lp_camera_to_odom.valid) {
-                // t_odometry_laser
-                const auto trans_ol = conversion::gsInterfaceToInternal(lp_laser_to_odom);
-                // t_odometry_camera
-                const auto trans_oc = conversion::gsInterfaceToInternal(lp_camera_to_odom);
+            // Get relative movement between camera and laser at that time !
+            if (lp_laser_to_camera.valid) {
+                // Transform from laser -> to camera frame (or laser origin in camera's frame)
+                const auto trans_lc = conversion::gsInterfaceToInternal(lp_laser_to_camera);
 
-                // compute relative translation and rotation camera -> laser
-                const Vector3 t_lc = trans_ol.position.value - trans_oc.position.value;
-                const Quaternion r_lc = trans_ol.orientation.value.conjugate() * trans_oc.orientation.value;
+                // Relative translation and rotation camera -> laser
+                const Vector3 t_lc = trans_lc.position.value;
+                const Quaternion r_lc = trans_lc.orientation.value;
 
-                // update relative rotation/translation information
+                // Update relative rotation/translation information.
+                // Converting from LP to optical coordinate system.
                 laser_data_to_use.trans_lc_ = openvslam::Vec3_t(t_lc.y(), -t_lc.x(), t_lc.z());
                 Quaternion vslam_r_lc = Quaternion(r_lc.w(), r_lc.y(), -r_lc.x(), r_lc.z());
                 laser_data_to_use.rot_lc_ = vslam_r_lc.normalized().toRotationMatrix();
