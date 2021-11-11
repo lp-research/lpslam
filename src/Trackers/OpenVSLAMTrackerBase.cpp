@@ -45,6 +45,7 @@ OpenVSLAMTrackerBase::OpenVSLAMTrackerBase()
     getConfigOptions().optional(m_configUseOpenCL, false);
     getConfigOptions().optional(m_configUseCUDA, false);
     getConfigOptions().optional(m_configRelocWithNavigation, true);
+    getConfigOptions().optional(m_configBaselineDistThresh, 0.1);
     getConfigOptions().optional(m_configMapFilename, std::string("map.db"));
     getConfigOptions().optional(m_configMaxLaserAge, 1.0); // seconds
 }
@@ -68,6 +69,7 @@ void OpenVSLAMTrackerBase::OnConfigurationUpdate() {
     m_useOpenCL = getConfigOptions().getBool(m_configUseOpenCL);
     m_useCUDA = getConfigOptions().getBool(m_configUseCUDA);
     m_relocWithNavigation = getConfigOptions().getBool(m_configRelocWithNavigation);
+    m_baselineDistThresh = getConfigOptions().getDouble(m_configBaselineDistThresh);
     m_maxLaserAge = getConfigOptions().getDouble(m_configMaxLaserAge);
 }
 
@@ -138,20 +140,20 @@ bool OpenVSLAMTrackerBase::startOpenVSlam(bool stereo) {
 
         // populate the YAML node ourselves
         YAML::Node configNode;
-        configNode["Camera.name"] = "LpSlam";
-        configNode["Camera.setup"] = m_cameraSetup;
+        configNode["Camera"]["name"] = "LpSlam";
+        configNode["Camera"]["setup"] = m_cameraSetup;
 
         if (primaryCam.distortion_function == LpSlamCameraDistortionFunction::LpSlamCameraDistortionFunction_Omni) {
             // scaling of fx, fy for Omni camera is hard-coded to work well with Varjo XR-3 cameras
-            configNode["Camera.fx"] = primaryCam.resolution_x / 1.7;
-            configNode["Camera.fy"] = primaryCam.resolution_y / 1.7;
-            configNode["Camera.cx"] = primaryCam.resolution_x / 2.0;
-            configNode["Camera.cy"] = primaryCam.resolution_y / 2.0;
+            configNode["Camera"]["fx"] = primaryCam.resolution_x / 1.7;
+            configNode["Camera"]["fy"] = primaryCam.resolution_y / 1.7;
+            configNode["Camera"]["cx"] = primaryCam.resolution_x / 2.0;
+            configNode["Camera"]["cy"] = primaryCam.resolution_y / 2.0;
         } else {
-            configNode["Camera.fx"] = primaryCam.f_x;
-            configNode["Camera.fy"] = primaryCam.f_y;
-            configNode["Camera.cx"] = primaryCam.c_x;
-            configNode["Camera.cy"] = primaryCam.c_y;
+            configNode["Camera"]["fx"] = primaryCam.f_x;
+            configNode["Camera"]["fy"] = primaryCam.f_y;
+            configNode["Camera"]["cx"] = primaryCam.c_x;
+            configNode["Camera"]["cy"] = primaryCam.c_y;
         }
 
         // for perspective camera
@@ -159,49 +161,50 @@ bool OpenVSLAMTrackerBase::startOpenVSlam(bool stereo) {
         if ((primaryCam.distortion_function == LpSlamCameraDistortionFunction::LpSlamCameraDistortionFunction_Pinhole) ||
             (primaryCam.distortion_function == LpSlamCameraDistortionFunction::LpSlamCameraDistortionFunction_Omni) ||
             (primaryCam.distortion_function == LpSlamCameraDistortionFunction::LpSlamCameraDistortionFunction_NoDistortion)){
-            configNode["Camera.model"] = "perspective";
-            configNode["Camera.k1"] = 0.0;
-            configNode["Camera.k2"] = 0.0;
-            configNode["Camera.k3"] = 0.0;
-            configNode["Camera.p1"] = 0.0;
-            configNode["Camera.p2"] = 0.0;
+            configNode["Camera"]["model"] = "perspective";
+            configNode["Camera"]["k1"] = 0.0;
+            configNode["Camera"]["k2"] = 0.0;
+            configNode["Camera"]["k3"] = 0.0;
+            configNode["Camera"]["p1"] = 0.0;
+            configNode["Camera"]["p2"] = 0.0;
         } else if (primaryCam.distortion_function == LpSlamCameraDistortionFunction::LpSlamCameraDistortionFunction_Fisheye) {
-            configNode["Camera.model"] = "fisheye";
-            configNode["Camera.k1"] = primaryCam.dist[0];
-            configNode["Camera.k2"] = primaryCam.dist[1];
-            configNode["Camera.k3"] = primaryCam.dist[2];
-            configNode["Camera.k4"] = primaryCam.dist[3];
+            configNode["Camera"]["model"] = "fisheye";
+            configNode["Camera"]["k1"] = primaryCam.dist[0];
+            configNode["Camera"]["k2"] = primaryCam.dist[1];
+            configNode["Camera"]["k3"] = primaryCam.dist[2];
+            configNode["Camera"]["k4"] = primaryCam.dist[3];
         } else {
             spdlog::error("Camera distortion not supported");
             return false;
         }
 
-        configNode["Initializer.num_min_triangulated_pts"] = 40;
-        configNode["Initializer.parallax_deg_threshold"] = 0.2; 
+        configNode["Initializer"]["num_min_triangulated_pts"] = 40;
+        configNode["Initializer"]["parallax_deg_threshold"] = 0.2;
 
-        configNode["Camera.fps"] = primaryCam.fps;
-        configNode["Camera.cols"] = primaryCam.resolution_x;
-        configNode["Camera.rows"] = primaryCam.resolution_y;
+        configNode["Camera"]["fps"] = primaryCam.fps;
+        configNode["Camera"]["cols"] = primaryCam.resolution_x;
+        configNode["Camera"]["rows"] = primaryCam.resolution_y;
 
         if (stereo) {
-            configNode["Camera.focal_x_baseline"] = primaryCam.focal_x_baseline;
+            configNode["Camera"]["focal_x_baseline"] = primaryCam.focal_x_baseline;
         }
-        configNode["Camera.color_order"] = "Gray";
+        configNode["Camera"]["color_order"] = "Gray";
 
-        configNode["Feature.max_num_keypoints"] = m_slamKeypoints;
-        configNode["Feature.scale_factor"] = 1.2;
-        configNode["Feature.num_levels"] = 3;
+        configNode["Feature"]["max_num_keypoints"] = m_slamKeypoints;
+        configNode["Feature"]["scale_factor"] = 1.2;
+        configNode["Feature"]["num_levels"] = 3;
         // tweaked for ZED 2
-        configNode["Feature.ini_fast_threshold"] = 20;
-        configNode["Feature.min_fast_threshold"] = 7;
+        configNode["Feature"]["ini_fast_threshold"] = 20;
+        configNode["Feature"]["min_fast_threshold"] = 7;
 
         configNode["depth_threshold"] = 40;
         configNode["y_matching_margin"] = 2.0;
+        configNode["Mapping"]["baseline_dist_thr"] = m_baselineDistThresh;
 
         // todo: optional only for some use cases
         configNode["wait_for_navigation_data"] = m_waitForNavigation;
 
-        configNode["PangolinViewer.fps"] = m_viewerFps;
+        configNode["PangolinViewer"]["fps"] = m_viewerFps;
         configNode["use_opencl"] = m_useOpenCL;
         configNode["use_cuda"] = m_useCUDA;
         configNode["relocalize_with_nav_data"] = m_relocWithNavigation;
@@ -211,7 +214,7 @@ bool OpenVSLAMTrackerBase::startOpenVSlam(bool stereo) {
             cfg = std::make_shared<openvslam::config>(configNode);
         } catch (const std::exception& ex) {
             std::cout << "Failed to generate VSLAM config" << std::endl;
-            spdlog::error("Failed to generate VSLAM config", ex.what());
+            spdlog::error("Failed to generate VSLAM config: {0}", ex.what());
             return false;
         }
     }

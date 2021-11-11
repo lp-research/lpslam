@@ -81,6 +81,7 @@ protected:
     bool m_useOpenCL = false;
     bool m_useCUDA = false;
     bool m_relocWithNavigation = true;
+    double m_baselineDistThresh;
     std::string m_configFromFile = "";
     std::string m_mapFilename;
     std::string m_cameraSetup = "monocular";
@@ -116,6 +117,7 @@ private:
     const std::string m_configMapFilename = "mapFilename";
     const std::string m_configWaitForNavigation = "waitForNavigation";
     const std::string m_configRelocWithNavigation = "relocWithNavigation";
+    const std::string m_configBaselineDistThresh = "baselineDistThresh";
     const std::string m_configViewerFps = "viewerFps";
     const std::string m_configMaxLaserAge = "maxLaserAge";
     // forward navigation datat with a higher rate than the image fps
