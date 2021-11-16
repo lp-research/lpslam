@@ -284,6 +284,10 @@ TrackerBase::ProcessImageResult OpenVSLAMStereoTracker::processImage(CameraQueue
             }
         }
 
+    } else {
+        // Don't continue if there is no valid laser data
+        spdlog::error("Laser data is not valid or empty");
+        return res;
     }
 
     {
