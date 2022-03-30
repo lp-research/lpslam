@@ -96,11 +96,13 @@ if (LPSLAM_BUILD_BUGGY_CONAN_PACKAGES)
   set(conan_always_build openjpeg libjpeg libpng)
 endif()
 
+find_package(spdlog REQUIRED)
+
 conan_cmake_run(REQUIRES
     boost/1.72.0
     eigen/3.3.9
     nlohmann_json/3.7.3
-    spdlog/1.8.0
+    spdlog/${spdlog_VERSION}
     gtest/1.10.0
     tbb/2020.1
     protobuf/3.9.1
