@@ -87,7 +87,7 @@ class G2oConan(ConanFile):
         # to export the symbols of csparse
         cmake.definitions["G2O_LGPL_SHARED_LIBS"] = True
 
-        cmake.definitions["G2O_USE_OPENGL"] = False
+        cmake.definitions["G2O_USE_OPENGL"] = True
         # disabled threading because its experimental
         # and spams processing with many threads on Windows
         cmake.definitions["G2O_USE_OPENMP"] = False
